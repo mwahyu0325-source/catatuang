@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* ── Token desain CatatUang ────────────────────────────────────────
+   Tema terang: kertas hangat, tinta gelap, aksen hijau salam & bata tua
+   untuk masuk/keluar. Tema gelap: biru malam yang teduh, bukan hitam pekat. */
+
+:root {
+  --bg: #f4f2ec;
+  --surface: #fbfaf6;
+  --line: #e0ddd2;
+  --ink: #26302b;
+  --ink-soft: #6b7268;
+  --income: #16825d;
+  --income-wash: #e2efe8;
+  --expense: #a4442f;
+  --expense-wash: #f3e3dd;
+}
+
+.dark {
+  --bg: #191c1a;
+  --surface: #212522;
+  --line: #313632;
+  --ink: #e6e9e4;
+  --ink-soft: #979f96;
+  --income: #5fc497;
+  --income-wash: #1e3329;
+  --expense: #e08a72;
+  --expense-wash: #38241e;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-income: var(--income);
+  --color-income-wash: var(--income-wash);
+  --color-expense: var(--expense);
+  --color-expense-wash: var(--expense-wash);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.tab-num {
+  font-variant-numeric: tabular-nums;
+}
