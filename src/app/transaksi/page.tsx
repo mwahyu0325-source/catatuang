@@ -64,6 +64,12 @@ export default async function TransaksiPage({
 
   return (
     <PageShell title="Transaksi" subtitle={`${items.length} catatan · masuk ${formatRupiah(masuk)} · keluar ${formatRupiah(keluar)}`}>
+      {/* Export */}
+      <div className="flex justify-end border-t border-line pt-3">
+        <a href="/api/export" className="text-[13px] text-ink-soft hover:text-ink hover:underline" download>
+          Export CSV
+        </a>
+      </div>
       {/* Filter — form GET tanpa JS */}
       <form className="grid grid-cols-2 gap-2 border-y border-line py-3 sm:grid-cols-4">
         <input

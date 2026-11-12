@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { getSupabase, type TransactionRow } from "@/lib/supabase";
+import { getAnggaran } from "@/lib/settings";
 import { formatRupiah } from "@/lib/format";
 import { PageShell, Bagian } from "@/components/page-shell";
 import { BarisTransaksi } from "@/components/trans-row";
@@ -59,6 +60,8 @@ async function getData() {
   const total = (rows: Row[] | null, tipe: string) =>
     (rows ?? []).filter((r) => r.type === tipe).reduce((s, r) => s + Number(r.amount), 0);
 
+  const anggaran = await getAnggaran();
+
   return {
     totalIncome: total(semua.data, "income"),
     totalExpense: total(semua.data, "expense"),
@@ -67,6 +70,7 @@ async function getData() {
     perluReview: perluReviewReq.data ?? [],
     terakhir: (terakhirReq.data ?? []) as unknown as TransactionRow[],
     slices,
+    anggaran,
   };
 }
 
@@ -108,6 +112,39 @@ export default async function RingkasanPage() {
             </div>
           ))}
         </dl>
+
+        {/* Progres anggaran */}
+        {d.anggaran > 0 ? (
+          <div className="mt-5">
+            <div className="flex items-baseline justify-between text-[13px]">
+              <span className="text-ink-soft">
+                Anggaran bulan ini ({formatRupiah(d.bulanExpense)} dari {formatRupiah(d.anggaran)})
+              </span>
+              <span
+                className={
+                  "tab-num font-medium " +
+                  (d.bulanExpense >= d.anggaran ? "text-expense" : d.bulanExpense >= d.anggaran * 0.8 ? "text-ink" : "text-income")
+                }
+              >
+                {Math.min(999, Math.round((d.bulanExpense / d.anggaran) * 100))}%
+              </span>
+            </div>
+            <div className="mt-1.5 h-2 rounded-sm bg-line">
+              <div
+                className={
+                  "h-full rounded-sm " +
+                  (d.bulanExpense >= d.anggaran ? "bg-expense" : d.bulanExpense >= d.anggaran * 0.8 ? "bg-ink-soft" : "bg-income")
+                }
+                style={{ width: `${Math.min(100, (d.bulanExpense / d.anggaran) * 100)}%` }}
+              />
+            </div>
+            {d.bulanExpense >= d.anggaran ? (
+              <p className="mt-1 text-[12.5px] text-expense">Anggaran terlampaui.</p>
+            ) : d.bulanExpense >= d.anggaran * 0.8 ? (
+              <p className="mt-1 text-[12.5px] text-ink-soft">Mendekati batas — sisa {formatRupiah(d.anggaran - d.bulanExpense)}.</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {/* Komposisi pengeluaran bulan ini — donut chart */}

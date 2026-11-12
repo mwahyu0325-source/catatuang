@@ -45,11 +45,15 @@ export interface CategorizationResult {
 }
 
 /** Cari kategori yang cocok berdasarkan kata kunci. */
-export function matchRule(text: string, type: TransactionType): CategorizationResult | null {
+export function matchRule(
+  text: string,
+  type: TransactionType,
+  rules: CategoryRule[] = DEFAULT_CATEGORIES,
+): CategorizationResult | null {
   const lower = text.toLowerCase()
   let best: { rule: CategoryRule; score: number } | null = null
 
-  for (const rule of DEFAULT_CATEGORIES) {
+  for (const rule of rules) {
     if (rule.type !== type) continue
     let score = 0
     for (const kw of rule.keywords) {
@@ -81,11 +85,12 @@ export function matchRule(text: string, type: TransactionType): CategorizationRe
 export async function categorizeWithAI(
   description: string,
   type: TransactionType,
+  rules: CategoryRule[] = DEFAULT_CATEGORIES,
 ): Promise<CategorizationResult | null> {
   const apiKey = process.env.AGNES_API_KEY
   if (!apiKey || !description) return null
 
-  const categories = DEFAULT_CATEGORIES.filter((c) => c.type === type)
+  const categories = rules.filter((c) => c.type === type)
     .map((c) => (c.sub ? `${c.name}/${c.sub}` : c.name))
 
   try {
@@ -150,11 +155,12 @@ export async function categorizeWithAI(
 export async function categorize(
   description: string,
   type: TransactionType,
+  rules: CategoryRule[] = DEFAULT_CATEGORIES,
 ): Promise<CategorizationResult> {
-  const ruleResult = matchRule(description, type)
+  const ruleResult = matchRule(description, type, rules)
   if (ruleResult && ruleResult.confidence >= 0.7) return ruleResult
 
-  const aiResult = await categorizeWithAI(description, type)
+  const aiResult = await categorizeWithAI(description, type, rules)
   if (aiResult) return aiResult
   if (ruleResult) return ruleResult
 

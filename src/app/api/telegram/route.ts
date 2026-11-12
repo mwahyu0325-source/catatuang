@@ -96,7 +96,9 @@ async function handleTransaction(comstr: string, message: TelegramUpdate["messag
   }
 
   const note = extractDescription(body, amount.raw)
-  const cat = await categorize(note, type)
+  const { getKategoriEfektif } = await import("@/lib/settings")
+  const rules = await getKategoriEfektif()
+  const cat = await categorize(note, type, rules)
 
   const supabase = getSupabase()
   const { data, error } = await supabase
@@ -137,6 +139,30 @@ async function handleTransaction(comstr: string, message: TelegramUpdate["messag
     subcategory: cat.subcategory,
     needsReview: cat.needsReview,
   }), data.id, type)
+
+  // Peringatan anggaran (pengeluaran saja)
+  if (type === "expense") {
+    const { getAnggaran } = await import("@/lib/settings")
+    const anggaran = await getAnggaran()
+    if (anggaran > 0) {
+      const supa = getSupabase()
+      const now = new Date()
+      const awalBulan = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+      const { data: bulan } = await supa
+        .from("transactions")
+        .select("amount")
+        .eq("type", "expense")
+        .is("deleted_at", null)
+        .gte("occurred_at", awalBulan)
+      const keluarBulan = (bulan ?? []).reduce((s, r) => s + Number(r.amount), 0)
+      const sisa = anggaran - keluarBulan
+      if (sisa <= 0) {
+        await reply(message.chat.id, `🚨 Anggaran bulanan habis! Terpakai ${formatRupiah(keluarBulan)} dari ${formatRupiah(anggaran)}.`)
+      } else if (keluarBulan >= anggaran * 0.8) {
+        await reply(message.chat.id, `⚠️ Anggaran bulanan tinggal ${formatRupiah(sisa)} (${formatRupiah(keluarBulan)} dari ${formatRupiah(anggaran)}).`)
+      }
+    }
+  }
 }
 
 const FORMAT_HELP = [
@@ -241,12 +267,18 @@ async function handleCommand(text: string, message: TelegramUpdate["message"]) {
     const lines = [...byCategory.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([cat, total]) => `• ${cat}: ${formatRupiah(total)}`)
+    const { getAnggaran } = await import("@/lib/settings")
+    const anggaran = await getAnggaran()
+    const anggaranLine = anggaran > 0
+      ? `\n\nAnggaran: ${formatRupiah(expense)} dari ${formatRupiah(anggaran)}${expense > anggaran ? " — 🚨 melebihi!" : expense >= anggaran * 0.8 ? " — ⚠️ mendekati batas" : ""}`
+      : ""
     await reply(
       chatId,
       `<b>Laporan bulan ini</b>\n` +
         `Masuk : ${formatRupiah(income)}\n` +
         `Keluar: ${formatRupiah(expense)}\n\n` +
-        (lines.length ? `<b>Pengeluaran per kategori</b>\n${lines.join("\n")}` : "Belum ada pengeluaran bulan ini."),
+        (lines.length ? `<b>Pengeluaran per kategori</b>\n${lines.join("\n")}` : "Belum ada pengeluaran bulan ini.") +
+        anggaranLine,
     )
     return
   }

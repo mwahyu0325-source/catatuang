@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatRupiah, hariRelatif } from "@/lib/format";
 import type { TransactionRow } from "@/lib/supabase";
 
@@ -14,7 +15,16 @@ export function BarisTransaksi({ t }: { t: TransactionRow }) {
   return (
     <li className="flex items-baseline justify-between gap-4 py-2.5">
       <div className="min-w-0">
-        <p className="truncate text-sm leading-snug">{t.note}</p>
+        <p className="truncate text-sm leading-snug">
+          {t.note}
+          {" "}
+          <Link
+            href={`/transaksi/${t.id}`}
+            className="whitespace-nowrap text-[12px] text-ink-soft hover:text-ink hover:underline"
+          >
+            ubah
+          </Link>
+        </p>
         <p className="mt-0.5 text-[12.5px] text-ink-soft">
           {t.category}
           {t.subcategory ? ` · ${t.subcategory}` : ""}

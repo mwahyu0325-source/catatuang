@@ -7,6 +7,7 @@ const NAV = [
   { href: "/", label: "Ringkasan" },
   { href: "/transaksi", label: "Transaksi" },
   { href: "/laporan", label: "Laporan" },
+  { href: "/pengaturan", label: "Pengaturan" },
 ];
 
 function isActive(pathname: string, href: string) {
