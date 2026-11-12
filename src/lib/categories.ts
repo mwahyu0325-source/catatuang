@@ -75,46 +75,59 @@ export function matchRule(text: string, type: TransactionType): CategorizationRe
 }
 
 /**
- * Fallback: minta Gemini menentukan kategori.
+ * Fallback: minta Agnes AI (OpenAI-compatible) menentukan kategori.
  * Kembalikan null kalau tidak dikonfigurasi / error → gunakan "Lainnya".
  */
 export async function categorizeWithAI(
   description: string,
   type: TransactionType,
 ): Promise<CategorizationResult | null> {
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.AGNES_API_KEY
   if (!apiKey || !description) return null
 
   const categories = DEFAULT_CATEGORIES.filter((c) => c.type === type)
     .map((c) => (c.sub ? `${c.name}/${c.sub}` : c.name))
 
-  const prompt =
-    `Kategorikan transaksi ini. Pilih hanya satu dari kategori berikut: ${categories.join(", ")}. ` +
-    `Jawab saja dengan nama kategori, tanpa penjelasan tambahan.\n` +
-    `Deskripsi transaksi: "${description}"`
-
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `${process.env.AGNES_BASE_URL ?? "https://apihub.agnes-ai.com/v1"}/chat/completions`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 64 },
+          model: process.env.AGNES_MODEL ?? "agnes-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Kamu pengkategorikan transaksi keuangan Indonesia. Jawab HANYA dengan satu nama kategori persis dari daftar yang diberikan, tanpa penjelasan, tanpa tanda kutip.",
+            },
+            {
+              role: "user",
+              content:
+                `Kategori yang tersedia: ${categories.join(", ")}.\n` +
+                `Jenis transaksi: ${type === "income" ? "pemasukan" : "pengeluaran"}.\n` +
+                `Deskripsi transaksi: "${description}"`,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 32,
         }),
       },
     )
     if (!res.ok) return null
 
     const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[]
+      choices?: { message?: { content?: string } }[]
     }
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+    const answer = data.choices?.[0]?.message?.content?.trim()
     if (!answer) return null
 
-    // "Makanan & Minuman/Kopi" → cat & sub
-    const [catPart, subPart] = answer.split("/").map((s) => s.trim())
+    // "Makanan & Minuman/Kopi" → kategori & sub
+    const [catPart, subPart] = answer.split("/").map((s) => s.trim().replace(/["'.]/g, ""))
     const exact = categories.find(
       (c) => c === answer || c === `${catPart}/${subPart}`,
     )

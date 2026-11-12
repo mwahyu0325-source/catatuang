@@ -39,7 +39,6 @@
   --color-expense: var(--expense);
   --color-expense-wash: var(--expense-wash);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 html {
@@ -60,4 +59,32 @@ body {
 
 .tab-num {
   font-variant-numeric: tabular-nums;
+}
+
+/* Interaksi dasar — konsisten di semua halaman */
+a,
+button,
+input,
+select {
+  accent-color: var(--income);
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--income-wash);
+}
+
+/* Translasi hanya bila pemakainya tidak sedang meminta gerak minim */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }
